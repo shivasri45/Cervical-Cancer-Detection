@@ -447,6 +447,34 @@ def tab_feature_selection():
         else:
             st.warning("No features pass the threshold. Try lowering it.")
 
+    st.divider()
+    st.subheader("Feature Correlation Heatmap")
+    
+    view_all = st.checkbox("Show correlation for all numeric features", value=False)
+    heat_cols = num_df.columns.tolist() if view_all else selected_features + ([target] if target in num_df.columns and target not in selected_features else [])
+    
+    # Remove columns with zero variance (all identical values) which cause NaN correlations and blank gaps
+    valid_cols = [c for c in heat_cols if num_df[c].nunique() > 1]
+    
+    if len(valid_cols) > 1:
+        if len(valid_cols) < len(heat_cols):
+            st.caption(f"*Note: {len(heat_cols) - len(valid_cols)} feature(s) with zero variance (all identical values) were hidden.*")
+            
+        corr_matrix = num_df[valid_cols].corr()
+        fig_heat = px.imshow(
+            corr_matrix, 
+            text_auto=".2f" if len(valid_cols) <= 15 else False,
+            title="Correlation Matrix",
+            template="plotly_dark",
+            color_continuous_scale="RdBu_r",
+            aspect="auto",
+            zmin=-1, zmax=1
+        )
+        fig_heat.update_layout(margin=dict(t=40, b=20))
+        st.plotly_chart(fig_heat, use_container_width=True)
+    else:
+        st.info("Not enough features to generate a heatmap.")
+
 
 def tab_data_split():
     st.header("5️⃣ Data Split")
